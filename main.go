@@ -8,15 +8,19 @@ import (
 )
 
 type model struct {
-	choices  []string
-	cursor   int
-	selected map[int]struct{}
+	hookChoices        []string
+	integrationChoices []string
+
+	hookSelected        map[int]struct{}
+	integrationSelected map[int]struct{}
+
+	cursor int
 }
 
 func initialModel() model {
 	return model{
-		choices:  []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
-		selected: make(map[int]struct{}),
+		hookChoices:        []string{"Defaults", "All", "go mod tidy (default)", "go fmt (default)", "go vet", "go critic", "golangci-lint"},
+		integrationChoices: []string{"Defaults", "All", "SonarQube (default)", "Code Factor", "Code Cov"},
 	}
 }
 
@@ -41,18 +45,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
+			if m.cursor < len(m.hookChoices)-1 {
 				m.cursor++
 
 			}
 
 		case "enter", " ":
-			_, ok := m.selected[m.cursor]
+			_, ok := m.hookSelected[m.cursor]
 			if ok {
-				delete(m.selected, m.cursor)
+				delete(m.hookSelected, m.cursor)
 
 			} else {
-				m.selected[m.cursor] = struct{}{}
+				m.hookSelected[m.cursor] = struct{}{}
 			}
 		}
 	}
@@ -62,10 +66,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	// The header
-	s := "What should we buy at the market?\n\n"
+	s := "Select which Go Hooks you want to run...\n\n"
 
 	// Iterate over our choices
-	for i, choice := range m.choices {
+	for i, hook := range m.hookChoices {
 
 		// Is the cursor pointing at this choice?
 		cursor := " " // no cursor
@@ -76,13 +80,13 @@ func (m model) View() string {
 
 		// Is this choice selected?
 		checked := " " // not selected
-		if _, ok := m.selected[i]; ok {
+		if _, ok := m.hookSelected[i]; ok {
 			checked = "x" // selected!
 
 		}
 
 		// Render the row
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, hook)
 	}
 
 	// The footer
