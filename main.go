@@ -8,19 +8,30 @@ import (
 )
 
 type model struct {
-	hookChoices        []string
-	integrationChoices []string
+	goHooks       []string
+	integrations  []string
+	cursor        int
+	selectedHooks map[int]struct{}
+}
 
-	hookSelected        map[int]struct{}
-	integrationSelected map[int]struct{}
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
 
-	cursor int
+func remove(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
 }
 
 func initialModel() model {
 	return model{
-		hookChoices:        []string{"Defaults", "All", "go mod tidy (default)", "go fmt (default)", "go vet", "go critic", "golangci-lint"},
-		integrationChoices: []string{"Defaults", "All", "SonarQube (default)", "Code Factor", "Code Cov"},
+		goHooks:       []string{"Defaults", "All", "go mod tidy (default)", "go fmt (default)", "go vet", "go critic", "golangci-lint"},
+		integrations:  []string{"Defaults", "All", "SonarQube (default)", "CodeFactor", "CodeCov"},
+		selectedHooks: make(map[int]struct{}),
 	}
 }
 
@@ -30,71 +41,56 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case tea.KeyMsg:
-
 		switch msg.String() {
-
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
 		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
-
 			}
 
 		case "down", "j":
-			if m.cursor < len(m.hookChoices)-1 {
+			if m.cursor < len(m.goHooks)-1 {
 				m.cursor++
-
 			}
 
 		case "enter", " ":
-			_, ok := m.hookSelected[m.cursor]
+			_, ok := m.selectedHooks[m.cursor]
 			if ok {
-				delete(m.hookSelected, m.cursor)
-
+				delete(m.selectedHooks, m.cursor)
 			} else {
-				m.hookSelected[m.cursor] = struct{}{}
+				m.selectedHooks[m.cursor] = struct{}{}
 			}
 		}
 	}
 
+	//fmt.Printf("selected Hooks: %v", m.selectedHooks)
 	return m, nil
 }
 
 func (m model) View() string {
-	// The header
-	s := "Select which Go Hooks you want to run...\n\n"
+	s := "What Go Hooks do you want to run?\n\n"
 
-	// Iterate over our choices
-	for i, hook := range m.hookChoices {
-
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
+	// iterate over GoHook choices
+	for i, hook := range m.goHooks {
+		cursor := " "
 		if m.cursor == i {
-			cursor = ">" // cursor!
-
+			cursor = ">"
 		}
 
-		// Is this choice selected?
-		checked := " " // not selected
-		if _, ok := m.hookSelected[i]; ok {
-			checked = "x" // selected!
-
+		checked := " "
+		if _, ok := m.selectedHooks[i]; ok {
+			checked = "x"
 		}
 
-		// Render the row
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, hook)
 	}
 
-	// The footer
 	s += "\nPress q to quit.\n"
 
-	// Send the UI for rendering
 	return s
-
 }
 
 func main() {
