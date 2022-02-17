@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/reflow/indent"
 )
 
 type model struct {
@@ -55,7 +54,7 @@ func (m model) View() string {
 		s = chosenView(m)
 	}
 
-	return indent.String("\n"+s+"\n\n", 2)
+	return s
 }
 
 func updateHookChoices(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
@@ -80,6 +79,10 @@ func updateHookChoices(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			} else {
 				m.selectedHooks[m.cursor] = struct{}{}
 			}
+
+		case "n":
+			m.hooksChosen = true
+			return m, nil
 		}
 	}
 
@@ -108,6 +111,10 @@ func updateIntegrationChoices(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			} else {
 				m.selectedIntegrations[m.cursor] = struct{}{}
 			}
+
+		case "n":
+			m.integrationsChosen = true
+			return m, nil
 		}
 	}
 
@@ -129,43 +136,39 @@ func updateChosen(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 }
 
 func hookChoicesView(m model) string {
-	c := m.cursor
-
 	t := "What Go Hooks do you want to run?\n\n"
 	t += "%s\n\n"
-	t += "j/k, up/down: select" + "enter, space: choose" + "q, ctrl+c: quit"
+	t += "j/k, up/down: select | " + "enter, space: choose | " + "n: next" + "q, ctrl+c: quit"
 
 	choices := fmt.Sprintf(
 		"%s\n%s\n%s\n%s\n%s\n%s\n%s",
-		checkbox("Defaults", c == 0),
-		checkbox("All", c == 1),
-		checkbox("go mod tidy (default)", c == 2),
-		checkbox("go fmt (default)", c == 3),
-		checkbox("go vet", c == 4),
-		checkbox("go critic", c == 5),
-		checkbox("golangci-lint", c == 6),
+		checkbox("Defaults", m.goHooks),
+		checkbox("All", m.goHooks),
+		checkbox("go mod tidy (default)", m.goHooks),
+		checkbox("go fmt (default)", m.goHooks),
+		checkbox("go vet", m.goHooks),
+		checkbox("go critic", m.goHooks),
+		checkbox("golangci-lint", m.goHooks),
 	)
 
-	return choices
+	return fmt.Sprintf(t, choices)
 }
 
 func integrationChoicesView(m model) string {
-	c := m.cursor
-
 	t := "What Go Integrations do you want to run?\n\n"
 	t += "%s\n\n"
-	t += "j/k, up/down: select" + "enter, space: choose" + "q, ctrl+c: quit"
+	t += "j/k, up/down: select | " + "enter, space: choose | " + "n: next" + "q, ctrl+c: quit"
 
 	choices := fmt.Sprintf(
 		"%s\n%s\n%s\n%s\n%s",
-		checkbox("Defaults", c == 0),
-		checkbox("All", c == 1),
-		checkbox("SonarQube (default)", c == 2),
-		checkbox("CodeFactor", c == 3),
-		checkbox("CodeCov", c == 4),
+		checkbox("Defaults", m.integrations),
+		checkbox("All", m.integrations),
+		checkbox("SonarQube (default)", m.integrations),
+		checkbox("CodeFactor", m.integrations),
+		checkbox("CodeCov", m.integrations),
 	)
 
-	return choices
+	return fmt.Sprintf(t, choices)
 }
 
 func chosenView(m model) string {
@@ -182,7 +185,14 @@ func chosenView(m model) string {
 	return msg
 }
 
-func checkbox(label string, checked bool) string {
+func checkbox(label string, list []string) string {
+	checked := false
+	for _, v := range list {
+		if v == label {
+			checked = true
+		}
+	}
+
 	if checked {
 		return "[x] " + label
 	}
